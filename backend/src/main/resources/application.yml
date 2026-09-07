@@ -1,0 +1,52 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  datasource:
+    url: jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true&prepareThreshold=0&connectTimeout=30&socketTimeout=60
+    username: postgres.wykapfeijyqvjonqmfth
+    password: stratLab@567
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      max-lifetime: 540000 # 9 minutes (Supabase default idle timeout is 10 mins)
+      keepalive-time: 60000
+      maximum-pool-size: 2
+      connection-timeout: 60000
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 3
+    url: jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?sslmode=require&prepareThreshold=0&connectTimeout=30&socketTimeout=60
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:ChangeThisToAStrong256BitSecretKeyForJWTSigning123456}
+    access-ttl-seconds: 900
+  broker:
+    alpaca:
+      key-id: PKEZNDD3PAYNUHPR2WGKXSZJHP
+      secret-key: 4xiDdmCYjc24aWJyteaWv3Vqu4YipEEdk84a6RTNjVqY
+      base-url: https://paper-api.alpaca.markets
+  data:
+    fmp:
+      api-keys: ZWmP203nWD7DgeVF8Y45kRhUl9K6Pcei
+    kaggle:
+      username: ${KAGGLE_USERNAME:your_kaggle_username}
+      key: ${KAGGLE_KEY:your_kaggle_api_key}
+      token: KGAT_2529c8c1aad59630fc8a72cada035323
+    eodhd:
+      api-token: ${EODHD_API_TOKEN:demo}

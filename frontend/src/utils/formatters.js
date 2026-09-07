@@ -1,0 +1,4 @@
+export const formatCurrency = (val) => {
+  if (val == null || val === 0) return '$0.00';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+};
