@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import AuthModal from './components/AuthModal';
 import MasterLayout from './components/layout/MasterLayout';
 import Dashboard from './pages/Dashboard';
 import Strategies from './pages/Strategies';
@@ -10,20 +10,15 @@ import LiveMonitoring from './pages/LiveMonitoring';
 import PlaceholderPage from './pages/PlaceholderPage';
 import Backtests from './pages/Backtests';
 import Datasets from './pages/Datasets';
-import AuthPage from './pages/AuthPage';
 import './index.css';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
+        <AuthModal />
         <Routes>
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/" element={
-            <ProtectedRoute>
-              <MasterLayout />
-            </ProtectedRoute>
-          }>
+          <Route path="/" element={<MasterLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="strategies" element={<Strategies />} />
             <Route path="strategies/:id" element={<StrategyDetails />} />

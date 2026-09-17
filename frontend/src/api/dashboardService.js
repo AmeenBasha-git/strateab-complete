@@ -15,7 +15,7 @@ const authFetch = async (url, options = {}) => {
   if (response.status === 401) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    window.location.href = '/login';
+    window.location.reload();
     throw new Error('Session expired');
   }
   return response;
