@@ -11,12 +11,15 @@ import com.quantplatform.core.backtest.service.DatasetValidationService;
 import com.quantplatform.core.common.exception.ResourceNotFoundException;
 import com.quantplatform.core.common.response.ApiResponse;
 import com.quantplatform.core.execution.broker.Candle;
+import com.quantplatform.core.strategy.domain.Strategy;
 import com.quantplatform.core.strategy.engine.StrategyManager;
 import com.quantplatform.core.strategy.engine.TradingStrategy;
+import com.quantplatform.core.strategy.repository.StrategyRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,6 +43,7 @@ public class BacktestController {
     private final DatasetValidationService validationService;
     private final BacktestManager backtestManager;
     private final StrategyManager strategyManager;
+    private final StrategyRepository strategyRepository;
     private final com.quantplatform.core.backtest.service.KaggleDatasetService kaggleDatasetService;
     private final com.quantplatform.core.backtest.service.EodhdService eodhdService;
     private final Path uploadDir;
@@ -50,6 +54,7 @@ public class BacktestController {
                               DatasetValidationService validationService,
                               BacktestManager backtestManager,
                               StrategyManager strategyManager,
+                              StrategyRepository strategyRepository,
                               com.quantplatform.core.backtest.service.KaggleDatasetService kaggleDatasetService,
                               com.quantplatform.core.backtest.service.EodhdService eodhdService,
                               @Value("${app.backtest.upload-dir:./backtest-data}") String uploadDir) {
@@ -59,16 +64,18 @@ public class BacktestController {
         this.validationService = validationService;
         this.backtestManager = backtestManager;
         this.strategyManager = strategyManager;
+        this.strategyRepository = strategyRepository;
         this.kaggleDatasetService = kaggleDatasetService;
         this.eodhdService = eodhdService;
         this.uploadDir = Path.of(uploadDir);
     }
 
     @PostMapping("/datasets/import-url")
-    public ApiResponse<Map<String, Object>> importDatasetFromUrl(@RequestBody com.quantplatform.core.backtest.dto.ImportDatasetRequest request) {
-
-        // For now, use a placeholder userId until auth is wired to this endpoint
-        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    public ApiResponse<Map<String, Object>> importDatasetFromUrl(
+            @RequestBody com.quantplatform.core.backtest.dto.ImportDatasetRequest request,
+            @AuthenticationPrincipal UUID authUserId
+    ) {
+        UUID userId = authUserId != null ? authUserId : UUID.fromString("00000000-0000-0000-0000-000000000001");
 
         try {
             // Create upload directory if needed
@@ -139,8 +146,8 @@ public class BacktestController {
     }
 
     @GetMapping("/datasets")
-    public ApiResponse<List<BacktestDataset>> listDatasets() {
-        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    public ApiResponse<List<BacktestDataset>> listDatasets(@AuthenticationPrincipal UUID authUserId) {
+        UUID userId = authUserId != null ? authUserId : UUID.fromString("00000000-0000-0000-0000-000000000001");
         return ApiResponse.success(
                 datasetRepository.findByUploadedByOrderByCreatedAtDesc(userId),
                 "OK"
@@ -148,12 +155,15 @@ public class BacktestController {
     }
 
     @PostMapping("/run")
-    public ApiResponse<BacktestRun> runBacktest(@RequestBody RunBacktestRequest request) {
-        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    public ApiResponse<BacktestRun> runBacktest(
+            @RequestBody RunBacktestRequest request,
+            @AuthenticationPrincipal UUID userId
+    ) {
+        UUID resolvedUserId = userId != null ? userId : UUID.fromString("00000000-0000-0000-0000-000000000001");
 
         BacktestRun run = backtestManager.execute(
                 request.datasetId(), request.strategyName(),
-                request.startingEquity(), userId,
+                request.startingEquity(), resolvedUserId,
                 request.slippageBps(), request.commissionPerTrade()
         );
 
@@ -167,8 +177,8 @@ public class BacktestController {
     }
 
     @GetMapping("/runs")
-    public ApiResponse<List<BacktestRun>> listRuns() {
-        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    public ApiResponse<List<BacktestRun>> listRuns(@AuthenticationPrincipal UUID authUserId) {
+        UUID userId = authUserId != null ? authUserId : UUID.fromString("00000000-0000-0000-0000-000000000001");
         return ApiResponse.success(
                 runRepository.findByRunByOrderByCreatedAtDesc(userId),
                 "OK"
@@ -183,23 +193,38 @@ public class BacktestController {
     }
 
     @GetMapping("/runs/count")
-    public ApiResponse<Long> getRunCount() {
-        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    public ApiResponse<Long> getRunCount(@AuthenticationPrincipal UUID authUserId) {
+        UUID userId = authUserId != null ? authUserId : UUID.fromString("00000000-0000-0000-0000-000000000001");
         return ApiResponse.success(runRepository.countByRunBy(userId), "OK");
     }
 
-    /** Returns the list of available strategy names for the backtest run form. */
     @GetMapping("/strategies")
-    public ApiResponse<List<Map<String, String>>> availableStrategies() {
-        List<Map<String, String>> strategies = strategyManager.getAllStrategies().stream()
+    public ApiResponse<List<Map<String, String>>> availableStrategies(
+            @AuthenticationPrincipal UUID userId
+    ) {
+        List<Map<String, String>> strategies = new ArrayList<>(strategyManager.getAllStrategies().stream()
                 .map(s -> {
                     Map<String, String> entry = new LinkedHashMap<>();
                     entry.put("name", s.getStrategyName());
                     entry.put("symbol", s.getSymbol());
                     entry.put("description", s.getDescription());
+                    entry.put("type", "PLATFORM");
                     return entry;
                 })
-                .toList();
+                .toList());
+
+        if (userId != null) {
+            List<Strategy> userStrategies = strategyRepository.findByOwnerIdAndDeletedFalse(userId);
+            for (Strategy s : userStrategies) {
+                Map<String, String> entry = new LinkedHashMap<>();
+                entry.put("name", s.getName());
+                entry.put("symbol", "USER");
+                entry.put("description", s.getDescription() != null ? s.getDescription() : "User strategy");
+                entry.put("type", "USER");
+                strategies.add(entry);
+            }
+        }
+
         return ApiResponse.success(strategies, "OK");
     }
 }

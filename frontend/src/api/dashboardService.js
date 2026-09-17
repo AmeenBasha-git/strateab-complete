@@ -109,3 +109,31 @@ export const fetchBacktestStrategies = async () => {
   return await response.json();
 };
 
+// ============ Strategy Creation API ============
+
+export const parseStrategyDescription = async (description) => {
+  const response = await authFetch(`${BASE_URL}/v1/strategies/parse`, {
+    method: 'POST',
+    body: JSON.stringify({ description }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to parse strategy');
+  }
+  const result = await response.json();
+  return result.data;
+};
+
+export const createStrategyFromParsed = async (config) => {
+  const response = await authFetch(`${BASE_URL}/v1/strategies/create-from-parsed`, {
+    method: 'POST',
+    body: JSON.stringify(config),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to create strategy');
+  }
+  const result = await response.json();
+  return result.data;
+};
+

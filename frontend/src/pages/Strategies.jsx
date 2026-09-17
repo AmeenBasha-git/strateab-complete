@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { fetchLibraryStrategies } from '../api/dashboardService';
 import LoadingState from '../components/layout/LoadingState';
+import CreateStrategyModal from '../components/CreateStrategyModal';
 import { Search, Filter, Plus, Play, Pause, Code } from 'lucide-react';
 
 import { useNavigate } from 'react-router-dom';
@@ -8,34 +9,35 @@ import { useNavigate } from 'react-router-dom';
 const Strategies = () => {
   const [library, setLibrary] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const getLibrary = async () => {
-      try {
-        const data = await fetchLibraryStrategies();
-        // Sort so ACTIVE strategies appear at the top, OFFLINE at the bottom
-        const sortedData = data.sort((a, b) => {
-          if (a.status === 'ACTIVE' && b.status !== 'ACTIVE') return -1;
-          if (a.status !== 'ACTIVE' && b.status === 'ACTIVE') return 1;
-          return 0;
-        });
-        setLibrary(sortedData);
-      } catch (err) {
-        console.error("Failed to load library", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getLibrary();
+  const loadLibrary = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await fetchLibraryStrategies();
+      const sortedData = data.sort((a, b) => {
+        if (a.status === 'ACTIVE' && b.status !== 'ACTIVE') return -1;
+        if (a.status !== 'ACTIVE' && b.status === 'ACTIVE') return 1;
+        return 0;
+      });
+      setLibrary(sortedData);
+    } catch (err) {
+      console.error("Failed to load library", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadLibrary();
+  }, [loadLibrary]);
 
   return (
     <div>
       <div className="page-header">
         <h1>Strategy Library</h1>
-        <button className="btn-primary">
+        <button className="btn-primary" onClick={() => setShowCreateModal(true)}>
           <Plus size={16} /> Create New Strategy
         </button>
       </div>
@@ -77,7 +79,18 @@ const Strategies = () => {
                   style={{ cursor: 'pointer' }}
                 >
                   <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{strat.strategyName}</td>
-                  <td style={{ color: 'var(--text-secondary)' }}>{strat.type}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>
+                    {strat.strategyType === 'USER' ? (
+                      <span style={{
+                        background: 'rgba(139, 92, 246, 0.15)',
+                        color: '#a78bfa',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                      }}>USER</span>
+                    ) : strat.type}
+                  </td>
                   <td style={{ fontFamily: 'monospace' }}>{strat.version}</td>
                   <td>{strat.symbol || 'ANY'}</td>
                   <td>
@@ -105,6 +118,12 @@ const Strategies = () => {
           </table>
         )}
       </div>
+
+      <CreateStrategyModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={loadLibrary}
+      />
     </div>
   );
 };

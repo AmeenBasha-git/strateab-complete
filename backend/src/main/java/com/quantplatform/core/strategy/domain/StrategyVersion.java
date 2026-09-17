@@ -5,6 +5,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -36,7 +38,7 @@ public class StrategyVersion {
     @Column(name = "source_code", nullable = false)
     private String sourceCode;
 
-    /** JSON schema describing tunable parameters: names, types, defaults, bounds. */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "parameters_schema", columnDefinition = "jsonb")
     private String parametersSchema;
 

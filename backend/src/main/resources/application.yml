@@ -41,6 +41,8 @@ app:
       key-id: PKEZNDD3PAYNUHPR2WGKXSZJHP
       secret-key: 4xiDdmCYjc24aWJyteaWv3Vqu4YipEEdk84a6RTNjVqY
       base-url: https://paper-api.alpaca.markets
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
   data:
     fmp:
       api-keys: ZWmP203nWD7DgeVF8Y45kRhUl9K6Pcei

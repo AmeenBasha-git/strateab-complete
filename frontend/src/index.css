@@ -98,6 +98,15 @@ CRAZY ANIMATIONS
   100% { background-position: 0% 50%; }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
 .animate-slide-up {
   opacity: 0;
   animation: slideUpFade 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;

@@ -7,8 +7,11 @@ import com.quantplatform.core.backtest.repository.BacktestDatasetRepository;
 import com.quantplatform.core.backtest.repository.BacktestRunRepository;
 import com.quantplatform.core.common.exception.ResourceNotFoundException;
 import com.quantplatform.core.execution.broker.Candle;
+import com.quantplatform.core.strategy.domain.Strategy;
 import com.quantplatform.core.strategy.engine.StrategyManager;
 import com.quantplatform.core.strategy.engine.TradingStrategy;
+import com.quantplatform.core.strategy.repository.StrategyRepository;
+import com.quantplatform.core.strategy.service.UserStrategyLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -45,15 +48,21 @@ public class BacktestManager {
     private final BacktestDatasetRepository datasetRepository;
     private final BacktestRunRepository runRepository;
     private final StrategyManager strategyManager;
+    private final StrategyRepository strategyRepository;
+    private final UserStrategyLoader userStrategyLoader;
     private final JdbcTemplate jdbcTemplate;
 
     public BacktestManager(BacktestDatasetRepository datasetRepository,
                            BacktestRunRepository runRepository,
                            StrategyManager strategyManager,
+                           StrategyRepository strategyRepository,
+                           UserStrategyLoader userStrategyLoader,
                            JdbcTemplate jdbcTemplate) {
         this.datasetRepository = datasetRepository;
         this.runRepository = runRepository;
         this.strategyManager = strategyManager;
+        this.strategyRepository = strategyRepository;
+        this.userStrategyLoader = userStrategyLoader;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -70,11 +79,17 @@ public class BacktestManager {
         BacktestDataset dataset = datasetRepository.findById(datasetId)
                 .orElseThrow(() -> new ResourceNotFoundException("Dataset not found: " + datasetId));
 
-        // Find the strategy template and create an isolated backtest copy
+        // Find strategy from engine registry first, then fall back to user strategies in DB
         TradingStrategy template = strategyManager.getAllStrategies().stream()
                 .filter(s -> s.getStrategyName().equals(strategyName))
                 .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Strategy not found: " + strategyName));
+                .orElse(null);
+
+        if (template == null) {
+            Strategy dbStrategy = strategyRepository.findByNameAndOwnerIdAndDeletedFalse(strategyName, userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Strategy not found: " + strategyName));
+            template = userStrategyLoader.load(dbStrategy);
+        }
 
         TradingStrategy strategy = template.createBacktestInstance();
 

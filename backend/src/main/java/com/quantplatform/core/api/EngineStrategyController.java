@@ -1,9 +1,12 @@
 package com.quantplatform.core.api;
 
+import com.quantplatform.core.strategy.domain.Strategy;
 import com.quantplatform.core.strategy.engine.TradingStrategy;
 import com.quantplatform.core.strategy.engine.StrategyManager;
 import com.quantplatform.core.strategy.analytics.PerformanceMetricsService;
+import com.quantplatform.core.strategy.repository.StrategyRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -11,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/strategies")
@@ -19,19 +23,42 @@ public class EngineStrategyController {
 
     private final StrategyManager strategyManager;
     private final PerformanceMetricsService metricsService;
+    private final StrategyRepository strategyRepository;
 
     public EngineStrategyController(StrategyManager strategyManager,
-                                    PerformanceMetricsService metricsService) {
+                                    PerformanceMetricsService metricsService,
+                                    StrategyRepository strategyRepository) {
         this.strategyManager = strategyManager;
         this.metricsService = metricsService;
+        this.strategyRepository = strategyRepository;
     }
 
     @GetMapping("/library")
-    public List<Map<String, Object>> getStrategyLibrary() {
+    public List<Map<String, Object>> getStrategyLibrary(@AuthenticationPrincipal UUID userId) {
         List<Map<String, Object>> library = new ArrayList<>();
         for (TradingStrategy strategy : strategyManager.getAllStrategies()) {
             library.add(buildStrategyProfile(strategy));
         }
+
+        if (userId != null) {
+            List<Strategy> userStrategies = strategyRepository.findByOwnerIdAndDeletedFalse(userId);
+            for (Strategy s : userStrategies) {
+                Map<String, Object> profile = new HashMap<>();
+                profile.put("strategyName", s.getName());
+                profile.put("symbol", "");
+                profile.put("description", s.getDescription() != null ? s.getDescription() : "");
+                profile.put("entryRules", List.of());
+                profile.put("exitRules", List.of());
+                profile.put("status", "OFFLINE");
+                profile.put("type", "User Strategy");
+                profile.put("version", "v1.0.0");
+                profile.put("visibility", "Private");
+                profile.put("createdDate", s.getCreatedAt() != null ? s.getCreatedAt().toString() : "");
+                profile.put("strategyType", "USER");
+                library.add(profile);
+            }
+        }
+
         return library;
     }
 
