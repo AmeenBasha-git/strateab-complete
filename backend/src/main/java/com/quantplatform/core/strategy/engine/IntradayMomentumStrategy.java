@@ -69,7 +69,7 @@ public class IntradayMomentumStrategy implements TradingStrategy {
         Map<String, Object> state = new HashMap<>();
         state.put("position", positionState);
         state.put("positionSize", positionSize);
-        state.put("killSwitchTriggered", isKillSwitchTriggered);
+        state.put("isKillSwitchTriggered", isKillSwitchTriggered);
         state.put("currentPrice", currentPrice);
         state.put("vwap", currentVwap);
         state.put("upperBand", upperBand);

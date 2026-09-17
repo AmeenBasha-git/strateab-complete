@@ -1,21 +1,31 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  LineChart, 
-  Database, 
-  History, 
-  Rocket, 
-  Activity, 
-  BarChart2, 
-  FileText, 
-  Bell, 
-  ShieldCheck, 
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import {
+  LayoutDashboard,
+  LineChart,
+  Database,
+  History,
+  Rocket,
+  Activity,
+  BarChart2,
+  FileText,
+  Bell,
+  ShieldCheck,
   Settings,
-  User
+  User,
+  LogOut
 } from 'lucide-react';
 
 const Sidebar = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   const navItems = [
     { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={18} /> },
     { name: 'Strategies', path: '/strategies', icon: <LineChart size={18} /> },
@@ -52,6 +62,14 @@ const Sidebar = () => {
           <User size={18} />
           Profile
         </NavLink>
+        <button onClick={handleLogout} className="nav-item" style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          width: '100%', textAlign: 'left', font: 'inherit',
+          color: 'var(--accent-rose)',
+        }}>
+          <LogOut size={18} />
+          Logout
+        </button>
       </div>
     </div>
   );

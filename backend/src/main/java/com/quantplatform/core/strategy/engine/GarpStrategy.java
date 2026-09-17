@@ -48,7 +48,7 @@ public class GarpStrategy implements TradingStrategy {
     public Map<String, Object> getLiveState() {
         Map<String, Object> state = new HashMap<>();
         state.put("position", portfolioTargets.isEmpty() ? "NO_POSITION" : "LONG");
-        state.put("killSwitchTriggered", false);
+        state.put("isKillSwitchTriggered", false);
         state.put("portfolioTargets", portfolioTargets);
         state.put("lastRebalanceDate", lastRebalanceDate);
         return state;

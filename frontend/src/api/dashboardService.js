@@ -1,7 +1,28 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
+const authHeaders = () => {
+  const token = localStorage.getItem('accessToken');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+};
+
+const authFetch = async (url, options = {}) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: { ...authHeaders(), ...options.headers },
+  });
+  if (response.status === 401) {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+  return response;
+};
+
 export const fetchDashboardStatus = async () => {
-  const response = await fetch(`${BASE_URL}/dashboard/status`);
+  const response = await authFetch(`${BASE_URL}/dashboard/status`);
   if (!response.ok) {
     throw new Error('Failed to fetch data from engine');
   }
@@ -9,7 +30,7 @@ export const fetchDashboardStatus = async () => {
 };
 
 export const fetchStrategyDetails = async (strategyId) => {
-  const response = await fetch(`${BASE_URL}/strategies/${strategyId}`);
+  const response = await authFetch(`${BASE_URL}/strategies/${strategyId}`);
   if (!response.ok) {
     throw new Error('Failed to fetch strategy details');
   }
@@ -17,7 +38,7 @@ export const fetchStrategyDetails = async (strategyId) => {
 };
 
 export const fetchTrades = async () => {
-  const response = await fetch(`${BASE_URL}/dashboard/trades`);
+  const response = await authFetch(`${BASE_URL}/dashboard/trades`);
   if (!response.ok) {
     throw new Error('Failed to fetch trades');
   }
@@ -25,7 +46,7 @@ export const fetchTrades = async () => {
 };
 
 export const fetchLibraryStrategies = async () => {
-  const response = await fetch(`${BASE_URL}/strategies/library`);
+  const response = await authFetch(`${BASE_URL}/strategies/library`);
   if (!response.ok) {
     throw new Error('Failed to fetch strategy library');
   }
@@ -35,9 +56,8 @@ export const fetchLibraryStrategies = async () => {
 // ============ Backtest API ============
 
 export const importDatasetFromUrl = async (name, symbol, timeframe, sourceType, sourceUri, { exchange, fromDate, toDate } = {}) => {
-  const response = await fetch(`${BASE_URL}/v1/backtests/datasets/import-url`, {
+  const response = await authFetch(`${BASE_URL}/v1/backtests/datasets/import-url`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, symbol, timeframe, sourceType, sourceUri, exchange, fromDate, toDate }),
   });
   if (!response.ok) {
@@ -47,7 +67,7 @@ export const importDatasetFromUrl = async (name, symbol, timeframe, sourceType, 
 };
 
 export const fetchDatasets = async () => {
-  const response = await fetch(`${BASE_URL}/v1/backtests/datasets`);
+  const response = await authFetch(`${BASE_URL}/v1/backtests/datasets`);
   if (!response.ok) {
     throw new Error('Failed to fetch datasets');
   }
@@ -55,9 +75,8 @@ export const fetchDatasets = async () => {
 };
 
 export const runBacktest = async (datasetId, strategyName, startingEquity) => {
-  const response = await fetch(`${BASE_URL}/v1/backtests/run`, {
+  const response = await authFetch(`${BASE_URL}/v1/backtests/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ datasetId, strategyName, startingEquity }),
   });
   if (!response.ok) {
@@ -67,7 +86,7 @@ export const runBacktest = async (datasetId, strategyName, startingEquity) => {
 };
 
 export const fetchBacktestRuns = async () => {
-  const response = await fetch(`${BASE_URL}/v1/backtests/runs`);
+  const response = await authFetch(`${BASE_URL}/v1/backtests/runs`);
   if (!response.ok) {
     throw new Error('Failed to fetch backtest runs');
   }
@@ -75,7 +94,7 @@ export const fetchBacktestRuns = async () => {
 };
 
 export const fetchBacktestRunCount = async () => {
-  const response = await fetch(`${BASE_URL}/v1/backtests/runs/count`);
+  const response = await authFetch(`${BASE_URL}/v1/backtests/runs/count`);
   if (!response.ok) {
     throw new Error('Failed to fetch backtest count');
   }
@@ -83,7 +102,7 @@ export const fetchBacktestRunCount = async () => {
 };
 
 export const fetchBacktestStrategies = async () => {
-  const response = await fetch(`${BASE_URL}/v1/backtests/strategies`);
+  const response = await authFetch(`${BASE_URL}/v1/backtests/strategies`);
   if (!response.ok) {
     throw new Error('Failed to fetch backtest strategies');
   }

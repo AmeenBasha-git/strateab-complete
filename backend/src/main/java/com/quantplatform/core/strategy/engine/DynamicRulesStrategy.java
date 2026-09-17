@@ -51,7 +51,7 @@ public class DynamicRulesStrategy implements TradingStrategy {
     public Map<String, Object> getLiveState() {
         Map<String, Object> state = new HashMap<>();
         state.put("position", positionSize > 0 ? "LONG" : "NO_POSITION");
-        state.put("killSwitchTriggered", false);
+        state.put("isKillSwitchTriggered", false);
         return state;
     }
 

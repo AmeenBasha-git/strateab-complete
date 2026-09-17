@@ -52,9 +52,9 @@ public class DashboardController {
             // Fallback to zero
         }
         
-        List<TradingStrategy> activeStrategies = strategyManager.getActiveStrategies();
-        
-        for (TradingStrategy strategy : activeStrategies) {
+        List<TradingStrategy> allStrategies = strategyManager.getAllStrategies();
+
+        for (TradingStrategy strategy : allStrategies) {
             Map<String, Object> status = new HashMap<>();
             
             // 1. Account Data
@@ -63,6 +63,8 @@ public class DashboardController {
             // 2. Strategy Data
             status.put("strategyName", strategy.getStrategyName());
             status.put("symbol", strategy.getSymbol());
+            status.put("isActive", strategy.isActive());
+            status.put("description", strategy.getDescription());
             
             // Include dynamic state directly from the strategy
             Map<String, Object> liveState = strategy.getLiveState();
@@ -73,11 +75,15 @@ public class DashboardController {
                 status.put("positionState", status.get("position"));
             }
             
-            // Fetch live price from broker directly so it updates even when market is closed (if supported by strategy symbol)
+            // Fetch live price from broker directly so it updates even when market is closed
             if (!strategy.getSymbol().equals("MULTIPLE")) {
-                BigDecimal livePrice = brokerAdapter.getCurrentPrice(strategy.getSymbol());
-                if (livePrice != null && livePrice.compareTo(BigDecimal.ZERO) > 0) {
-                    status.put("currentPrice", livePrice);
+                try {
+                    BigDecimal livePrice = brokerAdapter.getCurrentPrice(strategy.getSymbol());
+                    if (livePrice != null && livePrice.compareTo(BigDecimal.ZERO) > 0) {
+                        status.put("currentPrice", livePrice);
+                    }
+                } catch (Exception e) {
+                    // Broker unavailable — keep whatever price the strategy already has
                 }
             }
 

@@ -3,7 +3,7 @@ package com.quantplatform.core.strategy.engine;
 import com.quantplatform.core.execution.broker.BrokerAdapter;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +27,10 @@ public class MeanReversionStrategy implements TradingStrategy {
 
     @Override
     public Map<String, Object> getLiveState() {
-        return Collections.emptyMap(); // Offline strategy, no live state
+        Map<String, Object> state = new HashMap<>();
+        state.put("position", "NO_POSITION");
+        state.put("isKillSwitchTriggered", false);
+        return state;
     }
 
     @Override
